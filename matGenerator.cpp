@@ -75,9 +75,9 @@ void writeMatrix(const string &filename, vector<vector<int>> &M, vector<vector<d
     }
 
     // dimension and element number
-    int nrow = n + K + m + T + m*n*K + m*K + 2*T*(K+1) + m*T*K*(K-1) + m*n;
-    int ncol = n*K+m*n*K+m*T+T*(K+1)*(K+1);
-    int nele = n*K + K*n + m*T + T*m + m*n*K*2 + m*K*n + 2*T*(K+1)*K + m*T*K*(K-1)*(2*n+2) + m*n*K;
+    int nrow = n + K + m + T + m*n*K + m*K + T*K + m*T*K*(K-1) + m*n;
+    int ncol = n*K+m*n*K+m*T+T*K*K;
+    int nele = n*K + K*n + m*T + T*m + m*n*K*2 + m*K*n + 2*T*K*(K-1) + m*T*K*(K-1)*(2*n+2) + m*n*K;
     int nzero = 0;
     for (int i = 0; i < V.size(); i++)
         for (int j = 0; j < V[0].size(); j++)
@@ -144,15 +144,12 @@ void writeMatrix(const string &filename, vector<vector<int>> &M, vector<vector<d
     // linear progression constraint
     basej = n*K + m*n*K + m*T;
     for (int t = 1; t <= T; t++) {
-        for (int k = 1; k <= K+1; k++) {
-            for (int l = 1; l <= K+1; l++)
-                if (l != k)
-                    outFile << basej+ (t-1)*(K+1)*(K+1) + (k-1)*(K+1) + l << " " << 1 << " ";
-            outFile << endl;
-
-            for (int l = 1; l <= K+1; l++)
-                if (l != k)
-                    outFile << basej+ (t-1)*(K+1)*(K+1) + (l-1)*(K+1) + k << " " << 1 << " ";
+        for (int k = 1; k <= K; k++) {
+            for (int l = 1; l <= K; l++)
+                if (l != k){
+                    outFile << basej+ (t-1)*K*K + (k-1)*K + l << " " << 1 << " ";
+                    outFile << basej+ (t-1)*K*K + (l-1)*K + k << " " << 1 << " ";
+                }
             outFile << endl;
         }
     }
@@ -165,7 +162,7 @@ void writeMatrix(const string &filename, vector<vector<int>> &M, vector<vector<d
                 for (int l = 1; l <= K; l++)
                     if (l != k) {
                         outFile << basej+m*n*K+ (i-1)*T + t << " " << -1 << " ";
-                        outFile << basej+m*n*K+m*T+ (t-1)*(K+1)*(K+1) + (k-1)*(K+1) + l << " " << -1 << " ";
+                        outFile << basej+m*n*K+m*T+ (t-1)*K*K + (k-1)*K + l << " " << -1 << " ";
                         for (int j = 1; j <= n; j++) {
                             if (V[i-1][j-1] > 0) {
                                 outFile << basej+ (i-1)*n*K + (j-1)*K + k << " " << V[i-1][j-1] << " ";
@@ -188,16 +185,90 @@ void writeMatrix(const string &filename, vector<vector<int>> &M, vector<vector<d
     outFile.close();
 }
 
-int main() {
+// p_i,j is primarily indexed by j
+void writePLPM(const string &filename, vector<vector<int>> &M, const int &K) {
+    // define other parameters
+    auto m = static_cast<int>(M.size());
+    auto n = static_cast<int>(M[0].size());
+
+    // construct constraint matrix
+    ofstream outFile (filename);
+    if(!outFile)
+    {
+        cerr << "Error, cannot write into file. " << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // dimension and element number
+    int nrow = n + K + m*(K-1) + m*K;
+    int ncol = n*K + m*K + m*K;
+    int nele = n*K + n*K + 2*m*(K-1) + m*K*(n+2);
+    int nzero = 0;
+    for (int i = 0; i < m; i++)
+        for (int j = 0; j < n; j++)
+            if (M[i][j] == 0)
+                nzero++;
+    nele -= nzero*K;
+
+    outFile << nrow << " " << ncol << " " << nele << endl;
+
+    int basej;
+
+    // constraint "each column is assigned to exactly one set"
+    basej = 0;
+    for (int j = 1; j <= n; j++) {
+        for (int k = 1; k <= K; k++)
+            outFile << basej+ (j-1)*K + k << " " << 1 << " ";
+        outFile << endl;
+    }
+
+    // constraint "for each set Pk, at least one column is assigned to it"
+    basej = 0;
+    for (int k = 1; k <= K; k++) {
+        for (int j = 1; j <= n; j++)
+            outFile << basej+ (j-1)*K + k << " " << 1 << " ";
+        outFile << endl;
+    }
+
+
+    // constraint "for each sample the progression model is satisfied"
+    basej = n*K;
+    for (int i = 1; i <= m; i++) {
+        for (int k = 1; k < K; k++) {
+            outFile << basej + (i - 1) * K + k << " " << 1 << " " << basej + (i - 1) * K + k + 1 << " " << -1 << " ";
+            outFile << endl;
+        }
+    }
+
+    // constraint "for each row ri, the set Pk is considered mutated if it has a 1 in ri
+    // or if one of its entries in row ri is flipped to make it mutated"
+    basej = 0;
+    for (int i = 1; i <= m; i++) {
+        for (int k = 1; k <= K; k++) {
+            for (int j = 1; j <= n; j++)
+                if (M[i-1][j-1] > 0)
+                    outFile << basej+ (j-1)*K + k << " " << M[i-1][j-1] << " ";
+
+            outFile << basej+n*K+ (i-1)*K + k << " " << -1 << " ";
+            outFile << basej+n*K+m*K+ (i-1)*K + k << " " << 1 << " ";
+            outFile << endl;
+        }
+    }
+
+    outFile.close();
+}
+
+//Generate sparse matrix for SPM
+void CONCISE_MATRIX() {
     //-----------CONCISE_MATRIX-------
-    for (int K = 3; K <= 7; K++)
+    for (int K = 4; K <= 8; K++)
         for (int T = 1; T <= 3; T++) {
             // file names of input and output
-            string in = "TCGA_COAD_CCFs_spm.txt";
-            string out = "ccs_K" + to_string(K) + "_T" + to_string(T) + "_" + in;
+            string in = "GBM_SPM_CCF_Matrix.txt";
+            string out = "anc_K" + to_string(K) + "_T" + to_string(T) + "_" + in;
             // directories of input and output
             string addrin = "../../data/COMB/";
-            string addrout = "../../results/SPMInput/COAD_CCS/";
+            string addrout = "../../results/SPMInput/GBM_Ancestry/";
 
             // vaf matrix V and binarized matrix M
             vector<vector<int>> M;
@@ -208,7 +279,48 @@ int main() {
 
             // generate matrix file
             writeMatrix(addrout+out, M, V, K, T);
+        }
+}
+
+//Generate sparse matrix for PLPM
+void PLPM_Sparse() {
+    // file names of input and output
+    for (int K=2; K<=8; K++) {
+        string in = "WOOD_SPM_Binary_Matrix.txt";
+        string out = "PLPM_K" + to_string(K) + "_" + in;
+        // directories of input and output
+        string addrin = "../../data/COMB/";
+        string addrout = "../../results/PLPMInput/PLPM_WOOD/";
+
+        // vaf matrix V and binarized matrix M
+        vector<vector<int>> M;
+
+        readMatrix(addrin+in, M, true);
+
+        // generate matrix file
+        writePLPM(addrout+out, M, K);
     }
 
+}
+
+
+int main() {
+
+//    int K = 3;
+//    string in = "toy.txt";
+//    string out = "PLPM_K" + to_string(K) + "_" + in;
+//    // directories of input and output
+//    string addrin = "../../data/toy/";
+//    string addrout = "../../results/PLPMInput/";
+//
+//    // vaf matrix V and binarized matrix M
+//    vector<vector<int>> M;
+//
+//    readMatrix(addrin+in, M, true);
+//
+//    // generate matrix file
+//    writePLPM(addrout+out, M, K);
+
+    PLPM_Sparse();
     return 0;
 }
