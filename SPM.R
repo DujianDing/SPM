@@ -3,21 +3,25 @@ library(slam)
 #-------NOTE--------
 # p_j,k is primarily indexed by j.
 # ntree == T && nptwy == K
+
 #-------------------
 # user-defined parameters
-in_filename = "vaf.txt"
 ntree = 2
 nptwy = 3
 Tol=0
+in_filename = "vaf.txt"
+int_filename = paste0("anc_K", nptwy, "_T", ntree, "_", in_filename)
+out_filename = paste0("SPM_anc_out_K",nptwy,"_T",ntree,"_Tol",Tol,"_", in_filename)
+addrin = "/home/sahandk/SPM/COAD/"
+addrint = "/home/sahandk/SPM/COAD/COAD_Ancestry/"
+addrout = "/home/sahandk/SPM/COAD/"
 control = list(solnpoolintensity=0, solnpoolgap=1, solnpoolagap=0, tilim=108000, round=1)
+#-------------------
 
-# test setting
-# Amat = read_stm_CLUTO(paste0("../DataPreprocessing/results/SPMInput/anc_K", nptwy, "_T", ntree, "_", in_filename))
-# vaf = read.table(paste0("../DataPreprocessing/data/toy/", in_filename), sep = '\t')
 
 # production setting
-Amat = read_stm_CLUTO(paste0("/home/sahandk/SPM/COAD/COAD_Ancestry/anc_K", nptwy, "_T", ntree, "_", in_filename))
-vaf = read.table(paste0("/home/sahandk/SPM/COAD/",in_filename), sep = "\t")
+vaf = read.table(paste0(addrin, in_filename), sep = "\t")
+Amat = read_stm_CLUTO(paste0(addrint, int_filename))
 
 # construct constraint matrix
 order_j = order(Amat$j)
@@ -74,7 +78,7 @@ maxsol = NA
 # solve it by CPLEX
 res = Rcplex(cvec, Amat, bvec, objsense = objsense, sense = sense, vtype = vtype, n = maxsol, control = control)
 
-filename = paste0("/home/sahandk/SPM/COAD/SPM_anc_out_K",nptwy,"_T",ntree,"_Tol",Tol,"_", in_filename)
+filename = paste0(addrout, out_filename)
 if (file.exists(filename))
   file.remove(filename)
 invisible(lapply(res, function(x) write.table( t(x$xopt), filename  , append= T, sep='\t', row.names = F, col.names = F)))
