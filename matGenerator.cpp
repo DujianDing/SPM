@@ -259,68 +259,54 @@ void writePLPM(const string &filename, vector<vector<int>> &M, const int &K) {
 }
 
 //Generate sparse matrix for SPM
-void CONCISE_MATRIX() {
-    //-----------CONCISE_MATRIX-------
-    for (int K = 4; K <= 8; K++)
-        for (int T = 1; T <= 3; T++) {
-            // file names of input and output
-            string in = "GBM_SPM_CCF_Matrix.txt";
-            string out = "anc_K" + to_string(K) + "_T" + to_string(T) + "_" + in;
-            // directories of input and output
-            string addrin = "../../data/COMB/";
-            string addrout = "../../results/SPMInput/GBM_Ancestry/";
+void SPM_Sparse() {
+    //user defined parameters
+    //--------------------------
+    // K is the expected size of pathways
+    // T is the expected number of subtypes
+    int K = 4;
+    int T = 2;
+    // file names of input and output
+    string in = "GBM_SPM_CCF_Matrix.txt";
+    string out = "anc_K" + to_string(K) + "_T" + to_string(T) + "_" + in;
+    // directories of input and output
+    string addrin = "../../data/COMB/";
+    string addrout = "../../results/SPMInput/GBM_Ancestry/";
+    //--------------------------
 
-            // vaf matrix V and binarized matrix M
-            vector<vector<int>> M;
-            vector<vector<double>> V;
+    // vaf matrix V and binarized matrix M
+    vector<vector<int>> M;
+    vector<vector<double>> V;
 
-            readMatrix(addrin+in, V);
-            readMatrix(addrin+in, M, true);
+    readMatrix(addrin+in, V);
+    readMatrix(addrin+in, M, true);
 
-            // generate matrix file
-            writeMatrix(addrout+out, M, V, K, T);
-        }
+    // generate matrix file
+    writeMatrix(addrout+out, M, V, K, T);
 }
 
 //Generate sparse matrix for PLPM
 void PLPM_Sparse() {
+    int K = 5;
     // file names of input and output
-    for (int K=2; K<=8; K++) {
-        string in = "WOOD_SPM_Binary_Matrix.txt";
-        string out = "PLPM_K" + to_string(K) + "_" + in;
-        // directories of input and output
-        string addrin = "../../data/COMB/";
-        string addrout = "../../results/PLPMInput/PLPM_WOOD/";
+    string in = "WOOD_SPM_Binary_Matrix.txt";
+    string out = "PLPM_K" + to_string(K) + "_" + in;
+    // directories of input and output
+    string addrin = "../../data/COMB/";
+    string addrout = "../../results/PLPMInput/PLPM_WOOD/";
 
-        // vaf matrix V and binarized matrix M
-        vector<vector<int>> M;
+    // vaf matrix V and binarized matrix M
+    vector<vector<int>> M;
 
-        readMatrix(addrin+in, M, true);
+    readMatrix(addrin+in, M, true);
 
-        // generate matrix file
-        writePLPM(addrout+out, M, K);
-    }
-
+    // generate matrix file
+    writePLPM(addrout+out, M, K);
 }
 
 
 int main() {
 
-//    int K = 3;
-//    string in = "toy.txt";
-//    string out = "PLPM_K" + to_string(K) + "_" + in;
-//    // directories of input and output
-//    string addrin = "../../data/toy/";
-//    string addrout = "../../results/PLPMInput/";
-//
-//    // vaf matrix V and binarized matrix M
-//    vector<vector<int>> M;
-//
-//    readMatrix(addrin+in, M, true);
-//
-//    // generate matrix file
-//    writePLPM(addrout+out, M, K);
-
-    PLPM_Sparse();
+    SPM_Sparse();
     return 0;
 }
