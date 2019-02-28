@@ -5,21 +5,18 @@
 
 # user defined parameters
 #--------------------------
-in_filename = "TCGA_COAD_CCFs_spm.txt"
-in_filename = "GBM_SPM_CCF_Matrix.txt"
-nptwy = 4
-ntree = 4
-tolerence = 0.2
-# directories of SPM results and VAF files
-# addrres = "../DataPreprocessing/data/SPM_out/"
-# addrvaf = "../DataPreprocessing/data/COMB/"
-addrres = "C:/Users/Sahand/Updates/SPM/COAD_Ancestry/"
-addrres = "C:/Users/Sahand/Updates/SPM/GBM_Ancestry/"
+nptwy = 3
+ntree = 2
+Tol = 0.2
+in_filename = "vaf.txt"
+res_filename = paste0("SPM_anc_out_K", nptwy, "_T", ntree, "_Tol", Tol, "_", in_filename)
+addrin = "../DataPreprocessing/data/toy/"
+addrres = "../DataPreprocessing/data/SPM_out/"
 #--------------------------
 
-res = read.table(paste0(addrres, "SPM_anc_out_K", nptwy, "_T", ntree, "_Tol", tolerence, "_", in_filename), sep = '\t')
+vaf = read.table(paste0(addrin, in_filename), sep = '\t')
+res = read.table(paste0(addrres, res_filename), sep = '\t')
 res = as.matrix(res)
-vaf = read.table(paste0(addrres, in_filename), sep = '\t')
 m = dim(vaf)[1]
 n = dim(vaf)[2]
 
